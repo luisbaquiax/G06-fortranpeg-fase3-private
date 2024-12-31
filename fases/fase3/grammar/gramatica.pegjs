@@ -4,10 +4,15 @@
     import { errores } from '../index.js'
     
     import * as n from '../visitor/CST.js';
+
+
+
+
+
 }}
 
 gramatica
-  = _ prods:producciones+ _ {
+  = _ code:globalCode? _ prods:producciones+ _ {
     let duplicados = ids.filter((item, index) => ids.indexOf(item) !== index);
     if (duplicados.length > 0) {
         errores.push(new ErrorReglas("Regla duplicada: " + duplicados[0]));
@@ -19,7 +24,12 @@ gramatica
         errores.push(new ErrorReglas("Regla no encontrada: " + noEncontrados[0]));
     }
     prods[0].start = true;
-    return prods;
+    return new n.Grammar(prods, code);
+  }
+
+globalCode
+  = "{" before:$(. !"contains")* [ \t\n\r]* "contains" [ \t\n\r]* after:$[^}]* "}" {
+    return after ? {before, after} : {before}
   }
 
 producciones
@@ -34,29 +44,59 @@ opciones
   }
 
 union
-  = expr:expresion rest:(_ @expresion !(_ literales? _ "=") )* {
-    return new n.Union([expr, ...rest]);
+  = expr:parsingExpression rest:(_ @parsingExpression !(_ literales? _ "=") )* action:(_ @predicate)? {
+    const exprs = [expr, ...rest];
+    const labeledExprs = exprs
+        .filter((expr) => expr instanceof n.Pluck)
+        .filter((expr) => expr.labeledExpr.label);
+    if (labeledExprs.length > 0) {
+        action.params = labeledExprs.reduce((args, labeled) => {
+            const expr = labeled.labeledExpr.annotatedExpr.expr;
+            args[labeled.labeledExpr.label] =
+                expr instanceof n.Identificador ? expr.id : '';
+            return args;
+        }, {});
+    }
+    return new n.Union(exprs, action);
   }
 
-expresion
-  = label:$(etiqueta/varios)? _ expr:expresiones _ qty:$([?+*]/conteo)? {
-    return new n.Expresion(expr, label, qty);
+parsingExpression
+  = pluck
+  / '!' assertion:(match/predicate) {
+    return new n.NegAssertion(assertion);
+  }
+  / '&' assertion:(match/predicate) {
+    return new n.Assertion(assertion);
+  }
+  / "!." {
+    return new n.FinCadena();
   }
 
-etiqueta = ("@")? _ id:identificador _ ":" (varios)?
+pluck
+  = pluck:"@"? _ expr:label {
+    return new n.Pluck(expr, pluck ? true : false);
+  }
 
-varios = ("!"(!".") /"$"/"@"/"&")
+label
+  = label:(@identificador _ ":")? _ expr:annotated {
+    return new n.Label(expr, label);
+  }
 
-expresiones
+  annotated
+  = text:"$"? _ expr:match _ qty:([?+*]/conteo)? {
+    return new n.Annotated(expr, qty, text ? true : false);
+  }
+
+match
   = id:identificador {
     usos.push(id);
-    return new n.identificador(id);
+    return new n.Identificador(id);
   }
   / val:$literales isCase:"i"? {
     return new n.String(val.replace(/['"]/g, ''), isCase);
   }
   / "(" _ opciones:opciones _ ")"{
-    return new n.grupo(opciones);
+    return new n.Grupo(opciones);
   }
 
   / exprs:corchetes isCase:"i"?{
@@ -65,10 +105,7 @@ expresiones
 
   }
   / "." {
-    return new n.Any(true);
-  }
-  / "!."{
-    return new n.finCadena();
+    return new n.Any();
   }
 
 // conteo = "|" parteconteo _ (_ delimitador )? _ "|"
@@ -78,11 +115,15 @@ conteo = "|" _ (numero / id:identificador) _ "|"
         / "|" _ (numero / id:identificador)? _ "," _ opciones _ "|"
         / "|" _ (numero / id:identificador)? _ ".." _ (numero / id2:identificador)? _ "," _ opciones _ "|"
 
-// parteconteo = identificador
-//             / [0-9]? _ ".." _ [0-9]?
-// 			/ [0-9]
+predicate
+  = "{" [ \t\n\r]* returnType:predicateReturnType code:$[^}]* "}" {
+    return new n.Predicate(returnType, code, {})
+  }
 
-// delimitador =  "," _ expresion
+  predicateReturnType
+  = t:$(. !"::")+ [ \t\n\r]* "::" [ \t\n\r]* "res" {
+    return t.trim();
+  }
 
 // Regla principal que analiza corchetes con contenido
 corchetes
@@ -93,7 +134,7 @@ corchetes
 // Regla para validar un rango como [A-Z]
 rango
     = inicio:$caracter "-" fin:$caracter {
-        return new  n.rango(inicio, fin);
+        return new  n.Rango(inicio, fin);
     }
 
 // Regla para caracteres individuales
@@ -103,7 +144,7 @@ caracter
 // Coincide con cualquier contenido que no incluya "]"
 contenido
     = contenido: (corchete / @$texto){
-        return new n.literalRango(contenido);
+        return new n.LiteralRango(contenido);
     }
 
 corchete

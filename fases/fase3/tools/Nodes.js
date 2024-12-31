@@ -1,23 +1,38 @@
 /** @type {{[node: string]: {[arg: string]: string}}} */
-
 const nodes = {
-    Producciones: {
+    Grammar:{
+        rules: 'Producciones[]',
+        globalCode: '?{before: string; after?: string}',
+    },
+    Producciones:{
         id: 'string',
         expr: 'Opciones',
         alias: '?string',
         start: '?boolean',
     },
     Opciones: { exprs: 'Union[]'},
-    Union: { exprs: 'Expresion[]' },
-    Expresion: { expr: 'Node', label: '?string', qty: '?string' },
+    Union: { 
+        exprs: 'Node[]',
+        action: '?Predicate',
+    },
+    Predicate:{
+        returnType: 'string',
+        code: 'string',
+        params: '{ [label: string]: string }',
+    },
+    Pluck: {labeledExpr: 'Label', pluck: '?boolean'},
+    Label: {annotatedExpr: 'Annotated', label: '?string'},
+    Annotated: {expr: 'Node', qty: '?(string|Node)', text: '?boolean'},
+    Assertion: {assertion: 'Node'},
+    NegAssertion: {assertion: 'Node'},
     String: { val: 'string', isCase: '?boolean' },
+    Corchetes: { chars: '(LiteralRango|Rango)[]', isCase: '?boolean' },
+    Rango: { bottom: 'string', top: 'string' },
+    LiteralRango:{val:'string'},
+    Identificador: { id: 'string' },
+    Grupo: {expr: 'Opciones'},
     Any: {},
-    Corchetes: { chars: '(literalRango|rango)[]', isCase: '?boolean' },
-    rango: { bottom: 'string', top: 'string' },
-    literalRango:{val:'string'},
-    identificador: { id: 'string' },
-    grupo: {expr: 'Opciones'},
-    finCadena:{}
+    FinCadena:{}
  };
  
  export default nodes;
