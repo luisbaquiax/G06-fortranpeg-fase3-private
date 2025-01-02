@@ -21,6 +21,12 @@ export default class FortranTranslator {
     currentChoice;
     /** @type {number} */
     currentExpr;
+    /** @type {number} */
+    nameGroup;
+    /**
+     * @type {string[]}
+     */
+    groupsFunction;
 
     /**
      *
@@ -33,6 +39,8 @@ export default class FortranTranslator {
         this.currentRule = '';
         this.currentChoice = 0;
         this.currentExpr = 0;
+        this.nameGroup = 0;
+        this.groupsFunction = [];
     }
 
     /**
@@ -41,7 +49,7 @@ export default class FortranTranslator {
      */
     visitGrammar(node) {
         const rules = node.rules.map((rule) => rule.accept(this));
-
+        
         return Template.main({
             beforeContains: node.globalCode?.before ?? '',
             afterContains: node.globalCode?.after ?? '',
@@ -50,6 +58,7 @@ export default class FortranTranslator {
                 getActionId(node.rules[0].id, 0),
                 this.actionReturnTypes
             ),
+            groups: this.groupsFunction,
             actions: this.actions,
             rules,
         });
@@ -207,13 +216,15 @@ export default class FortranTranslator {
                 if(node.qty.count instanceof CST.NumberDelimiter){
                     exprIterator = node.qty.count.accept(this);
                 }else{
-                    exprIterator = `StringToInt(${node.qty.count.accept(this)})`
+                    //NO PUDE IMPLEMENTARLO
+                    exprIterator = "5";
                 }
                 return Template.strExprDelimiter({
                     
                     exprIterator: exprIterator,
                     iterador: `delimiter_iterator_${this.currentChoice}_${this.currentExpr}`,
                     expr: node.expr.accept(this),
+                    delimiter: node.qty.expr? node.qty.expr.accept(this): '',
                     destination: getExprId(this.currentChoice, this.currentExpr),
                 });
 
@@ -226,6 +237,21 @@ export default class FortranTranslator {
                     this.currentChoice,
                     this.currentExpr
                 )} = ${node.expr.accept(this)}`;
+            }
+
+            if(node.expr instanceof CST.Grupo){
+                
+                let nameGroup = "group"+this.nameGroup;
+                let temp = this.currentChoice;
+                let temp2 = this.currentExpr;
+                this.groupsFunction.push(node.expr.accept(this));
+                this.currentChoice = temp;
+                this.currentExpr = temp2;
+                return `${getExprId(
+                    this.currentChoice,
+                    this.currentExpr
+                )} = peg_${nameGroup}()`;
+               
             }
             return Template.strExpr({
                 expr: node.expr.accept(this),
@@ -349,7 +375,53 @@ export default class FortranTranslator {
      * @this {Visitor}
      */
     visitGrupo(node) {
-        return node.expr.accept(this);
+        let nameGrupo = "group"+this.nameGroup;
+        this.currentRule = nameGrupo;
+        
+        this.currentChoice = 0;
+
+
+        const ruleTranslation = Template.rule({
+            id:nameGrupo,
+            returnType: getReturnType(
+                getActionId(nameGrupo, this.currentChoice),
+                this.actionReturnTypes
+            ),
+            exprDeclarations: node.expr.exprs.flatMap((election, i) =>
+                election.exprs
+                    .filter((expr) => expr instanceof CST.Pluck)
+                    .map((label, j) => {
+                        const expr = label.labeledExpr.annotatedExpr.expr;
+                        return `${
+                            expr instanceof CST.Identificador
+                                ? getReturnType(
+                                      getActionId(expr.id, i),
+                                      this.actionReturnTypes
+                                  )
+                                : 'character(len=:), allocatable'
+                        } :: expr_${i}_${j}`;
+                    })
+            ),
+            delimiterIndex: node.expr.exprs.flatMap((election, i) =>
+                election.exprs
+                    .filter((expr) => expr instanceof CST.Pluck)
+                    .map((label, j) => {
+                        const expr = label.labeledExpr.annotatedExpr;
+                        if(expr.qty && typeof expr.qty !== 'string'){
+                            return  `integer :: delimiter_iterator_${i}_${j}`;
+                        }else{
+                            return '';
+                        }
+                    
+                    })
+            ),
+
+            expr: node.expr.accept(this),
+        });
+
+        this.nameGroup++;
+        return ruleTranslation;
+        //return node.expr.accept(this);
     }
 
     /**

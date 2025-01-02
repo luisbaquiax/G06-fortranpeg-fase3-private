@@ -7,6 +7,7 @@
  *  startingRuleType: string;
  *  rules: string[];
  *  actions: string[];
+ *  groups: string[];
  * }} data
  * @returns {string}
  */
@@ -36,11 +37,14 @@ module parser
         cursor = 1
 
         res = ${data.startingRuleId}()
+        
     end function parse
 
     ${data.rules.join('\n')}
 
     ${data.actions.join('\n')}
+
+    ${data.groups.join('\n')}
 
     function acceptString(str, isCase) result(accept)
         character(len=*) :: str
@@ -134,9 +138,9 @@ module parser
     end function consumeInput
 
     subroutine pegError()
-        print '(A,I1,A)', "Error at ", cursor, ": '"//input(cursor:cursor)//"'"
-
-        call exit(1)
+	character(len=:), allocatable :: error
+	error = "Error at " // intToStr(cursor) // ": '"//input(cursor:cursor)//"'"
+	print*, error
     end subroutine pegError
 
     function intToStr(int) result(cast)
@@ -223,9 +227,9 @@ export const election = (data) => `
                 ${expr}
                 exit
             `
-            )}
+            ).join('')}
             case default
-                call pegError()
+                    call pegError()
             end select
         end do
 `;
@@ -300,12 +304,24 @@ export const strExpr = (data) => {
  * exprIterator: string;
  * iterador: string;
 *  expr: string;
+*  delimiter?: string;
 *  destination: string
 *  quantifier?: string;
 * }} data
 * @returns
 */
 export const strExprDelimiter = (data) => {
+    if(data.delimiter !== ''){
+        return `lexemeStart = cursor
+                do ${data.iterador} = 1, ${data.exprIterator}
+                    if(.not. ${data.expr}) cycle
+                    ${data.destination} =  ${data.destination}//consumeInput()
+                    if(${data.iterador} < ${data.exprIterator}) then
+                        if(.not. ${data.delimiter}) cycle
+                        consumeInput()
+                    end if
+                end do`;
+    }
     return `lexemeStart = cursor
             do ${data.iterador} = 1, ${data.exprIterator}
                if(.not. ${data.expr}) cycle
