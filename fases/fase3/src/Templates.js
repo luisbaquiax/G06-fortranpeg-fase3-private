@@ -42,39 +42,65 @@ module parser
 
     ${data.actions.join('\n')}
 
-    function acceptString(str) result(accept)
+    function acceptString(str, isCase) result(accept)
         character(len=*) :: str
+        integer :: isCase
         logical :: accept
         integer :: offset
 
         offset = len(str) - 1
-        if (str /= input(cursor:cursor + offset)) then
-            accept = .false.
-            return
+
+        if (isCase == 0) then
+            if (str /= input(cursor:cursor + offset)) then
+                accept = .false.
+                return
+            end if
+        else if (isCase == 1) then
+            if (tolower(str) /= tolower(input(cursor:cursor + offset))) then
+                accept = .false.
+                return
+            end if
         end if
         cursor = cursor + len(str)
         accept = .true.
     end function acceptString
 
-    function acceptRange(bottom, top) result(accept)
+    function acceptRange(bottom, top, isCase) result(accept)
         character(len=1) :: bottom, top
+        integer :: isCase
         logical :: accept
 
-        if(.not. (input(cursor:cursor) >= bottom .and. input(cursor:cursor) <= top)) then
-            accept = .false.
-            return
+        if (isCase == 0) then
+
+            if(.not. (input(cursor:cursor) >= bottom .and. input(cursor:cursor) <= top)) then
+                accept = .false.
+                return
+            end if
+        else if (isCase == 1) then
+            if(.not. (tolower(input(cursor:cursor)) >= tolower(bottom) .and. tolower(input(cursor:cursor)) <= tolower(top))) then
+                accept = .false.
+                return
+            end if
         end if
         cursor = cursor + 1
         accept = .true.
     end function acceptRange
 
-    function acceptSet(set) result(accept)
+    function acceptSet(set, isCase) result(accept)
         character(len=1), dimension(:) :: set
+        integer :: isCase
         logical :: accept
 
-        if(.not. (findloc(set, input(cursor:cursor), 1) > 0)) then
-            accept = .false.
-            return
+        if(isCase == 0) then
+            if(.not. (findloc(set, input(cursor:cursor), 1) > 0)) then
+                accept = .false.
+                return
+            end if
+        else if (isCase == 1) then
+            if(.not. (findloc(set, tolower(input(cursor:cursor)), 1) > 0)) then
+                accept = .false.
+                return
+            end if
         end if
         cursor = cursor + 1
         accept = .true.
@@ -122,12 +148,38 @@ module parser
         cast = trim(adjustl(tmp))
     end function intToStr
 
+    FUNCTION StringToInt(str) RESULT(result)
+    IMPLICIT NONE
+    CHARACTER(LEN=*), INTENT(IN) :: str
+    INTEGER :: result
+    INTEGER :: ioStatus
+
+    result = 0
+
+    READ(str, *, IOSTAT=ioStatus) result
+
+END FUNCTION StringToInt
+
+
     function strToStr(str) result(cast)
         character(len=:), allocatable :: str
         character(len=:), allocatable :: cast
 
         cast = str
     end function strToStr
+
+    function tolower(str) result(lower_str)
+        character(len=*), intent(in) :: str
+        character(len=len(str)) :: lower_str
+        integer :: i
+
+        lower_str = str 
+        do i = 1, len(str)
+            if (iachar(str(i:i)) >= iachar('A') .and. iachar(str(i:i)) <= iachar('Z')) then
+                lower_str(i:i) = achar(iachar(str(i:i)) + 32)
+            end if
+        end do
+    end function tolower
 end module parser
 `;
 
@@ -137,6 +189,7 @@ end module parser
  *  id: string;
  *  returnType: string;
  *  exprDeclarations: string[];
+ *  delimiterIndex: string[];
  *  expr: string;
  * }} data
  * @returns
@@ -145,6 +198,7 @@ export const rule = (data) => `
     function peg_${data.id}() result (res)
         ${data.returnType} :: res
         ${data.exprDeclarations.join('\n')}
+        ${data.delimiterIndex.join('\n')}
         integer :: i
 
         savePoint = cursor
@@ -218,11 +272,47 @@ export const strExpr = (data) => {
                 end do
                 ${data.destination} = consumeInput()
             `;
+        case '*':
+            return `
+                lexemeStart = cursor
+                do while (.not. cursor > len(input))
+                    if (.not. ${data.expr}) exit
+                end do
+                ${data.destination} = consumeInput()
+            `;
+        case '?':
+            return `
+                lexemeStart = cursor
+                if (.not. ${data.expr}) then
+                end if
+                ${data.destination} = consumeInput()
+            `;
         default:
             throw new Error(
                 `'${data.quantifier}' quantifier needs implementation`
             );
     }
+};
+
+/**
+ *
+ * @param {{
+ * exprIterator: string;
+ * iterador: string;
+*  expr: string;
+*  destination: string
+*  quantifier?: string;
+* }} data
+* @returns
+*/
+export const strExprDelimiter = (data) => {
+    return `lexemeStart = cursor
+            do ${data.iterador} = 1, ${data.exprIterator}
+               if(.not. ${data.expr}) cycle
+               
+            end do
+            ${data.destination} = consumeInput()`;
+            
 };
 
 /**

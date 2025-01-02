@@ -93,7 +93,7 @@ match
     return new n.Identificador(id);
   }
   / val:$literales isCase:"i"? {
-    return new n.String(val.replace(/['"]/g, ''), isCase);
+    return new n.String(val.replace(/['"]/g, ''), isCase? true : false);
   }
   / "(" _ opciones:opciones _ ")"{
     return new n.Grupo(opciones);
@@ -101,7 +101,7 @@ match
 
   / exprs:corchetes isCase:"i"?{
     //console.log("Corchetes", exprs);
-    return new n.Corchetes(exprs, isCase);
+    return new n.Corchetes(exprs, isCase? true : false);
 
   }
   / "." {
@@ -110,10 +110,19 @@ match
 
 // conteo = "|" parteconteo _ (_ delimitador )? _ "|"
 
-conteo = "|" _ (numero / id:identificador) _ "|"
-        / "|" _ (numero / id:identificador)? _ ".." _ (numero / id2:identificador)? _ "|"
-        / "|" _ (numero / id:identificador)? _ "," _ opciones _ "|"
-        / "|" _ (numero / id:identificador)? _ ".." _ (numero / id2:identificador)? _ "," _ opciones _ "|"
+conteo = "|" _ expr: (numero / identificadorDelimiter) _ "|" {
+               return new n.DelimiterCount(expr);
+          }
+        / "|" _ expr_1:(numero / id:identificador)? _ ".." _ expr_2:(numero / id2:identificador)? _ "|"{
+                return new n.DelimiterMinMax(expr_1, expr_2);
+        }
+                
+        / "|" _ expr:(numero / id:identificador)? _ "," _ opcion:opciones _ "|"{
+                return new n.DelimiterCount(expr, opcion);
+        }
+        / "|" _ expr_1:(numero / id:identificador)? _ ".." _ expr_2:(numero / id2:identificador)? _ "," _ opcion:opciones _ "|"{
+                return new n.DelimiterMinMax(expr_1, expr_2, opcion);
+        }
 
 predicate
   = "{" [ \t\n\r]* returnType:predicateReturnType code:$[^}]* "}" {
@@ -188,10 +197,13 @@ secuenciaFinLinea = "\r\n" / "\n" / "\r" / "\u2028" / "\u2029"
 //     / "'" [^']* "'"
     
 
-numero = [0-9]+
+numero = [0-9]+{
+    return new n.NumberDelimiter( text());
+}
 
 identificador = [_a-z]i[_a-z0-9]i* { return text() }
 
+identificadorDelimiter =  [_a-z]i[_a-z0-9]i* { return new n.Identificador(text())}
 
 _ = (Comentarios /[ \t\n\r])*
 

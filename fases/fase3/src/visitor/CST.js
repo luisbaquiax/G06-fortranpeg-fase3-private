@@ -320,10 +320,12 @@ export class Rango {
      *
      * @param {string} bottom
 	 * @param {string} top
+	 * @param {boolean=} isCase
      */
-    constructor(bottom, top) {
+    constructor(bottom, top, isCase) {
         this.bottom = bottom;
 		this.top = top;
+		this.isCase = isCase;
     }
 
     /**
@@ -344,6 +346,83 @@ export class LiteralRango {
     /**
      *
      * @param {string} val
+	 * @param {boolean=} isCase
+     */
+    constructor(val, isCase) {
+        this.val = val;
+		this.isCase = isCase;
+    }
+
+    /**
+     * @template T
+     * @param {Visitor<T>} visitor
+     * @returns {T}
+     */
+    accept(visitor) {
+        return visitor.visitLiteralRango(this);
+    }
+}
+    
+
+/**
+ * @implements {Node}
+ */
+export class DelimiterCount {
+    /**
+     *
+     * @param {Node} count
+	 * @param {Opciones=} expr
+     */
+    constructor(count, expr) {
+        this.count = count;
+		this.expr = expr;
+    }
+
+    /**
+     * @template T
+     * @param {Visitor<T>} visitor
+     * @returns {T}
+     */
+    accept(visitor) {
+        return visitor.visitDelimiterCount(this);
+    }
+}
+    
+
+/**
+ * @implements {Node}
+ */
+export class DelimiterMinMax {
+    /**
+     *
+     * @param {Node=} min
+	 * @param {Node=} max
+	 * @param {Opciones=} expr
+     */
+    constructor(min, max, expr) {
+        this.min = min;
+		this.max = max;
+		this.expr = expr;
+    }
+
+    /**
+     * @template T
+     * @param {Visitor<T>} visitor
+     * @returns {T}
+     */
+    accept(visitor) {
+        return visitor.visitDelimiterMinMax(this);
+    }
+}
+    
+
+/**
+ * @implements {Node}
+ */
+export class NumberDelimiter {
+    /**
+     *
+     * @param {string} val
      */
     constructor(val) {
         this.val = val;
@@ -355,7 +434,7 @@ export class LiteralRango {
      * @returns {T}
      */
     accept(visitor) {
-        return visitor.visitLiteralRango(this);
+        return visitor.visitNumberDelimiter(this);
     }
 }
     

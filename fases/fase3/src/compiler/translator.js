@@ -86,6 +86,20 @@ export default class FortranTranslator {
                         } :: expr_${i}_${j}`;
                     })
             ),
+            delimiterIndex: node.expr.exprs.flatMap((election, i) =>
+                election.exprs
+                    .filter((expr) => expr instanceof CST.Pluck)
+                    .map((label, j) => {
+                        const expr = label.labeledExpr.annotatedExpr;
+                        if(expr.qty && typeof expr.qty !== 'string'){
+                            return  `integer :: delimiter_iterator_${i}_${j}`;
+                        }else{
+                            return '';
+                        }
+                    
+                    })
+            ),
+
             expr: node.expr.accept(this),
         });
 
@@ -188,8 +202,24 @@ export default class FortranTranslator {
                 destination: getExprId(this.currentChoice, this.currentExpr),
             });
         } else if (node.qty) {
+            if(node.qty instanceof CST.DelimiterCount){
+                let exprIterator;
+                if(node.qty.count instanceof CST.NumberDelimiter){
+                    exprIterator = node.qty.count.accept(this);
+                }else{
+                    exprIterator = `StringToInt(${node.qty.count.accept(this)})`
+                }
+                return Template.strExprDelimiter({
+                    
+                    exprIterator: exprIterator,
+                    iterador: `delimiter_iterator_${this.currentChoice}_${this.currentExpr}`,
+                    expr: node.expr.accept(this),
+                    destination: getExprId(this.currentChoice, this.currentExpr),
+                });
+
+            }
             // TODO: Implement repetitions (e.g., |3|, |1..3|, etc...)
-            throw new Error('Repetitions not implemented.');
+            //throw new Error('Repetitions not implemented.');
         } else {
             if (node.expr instanceof CST.Identificador) {
                 return `${getExprId(
@@ -246,7 +276,18 @@ export default class FortranTranslator {
      * @this {Visitor}
      */
     visitString(node) {
-        return `acceptString('${node.val}')`;
+        const literalMap = {
+            "\\t": "char(9)",  // Tabulación
+            "\\n": "char(10)", // Nueva línea
+            " ": "char(32)",   // Espacio
+            "\\r": "char(13)",  // Retorno de carro
+        };
+        const literalFortran = literalMap[node.val] || `'${node.val}'`;
+
+        if (node.isCase) {
+            return `acceptString(${literalFortran}, 1)`;
+        }
+        return `acceptString(${literalFortran}, 0)`;
     }
     
     /**
@@ -254,6 +295,8 @@ export default class FortranTranslator {
      * @this {Visitor}
      */
     visitCorchetes(node) {
+        node.chars.forEach(expr => { expr.isCase = node.isCase });
+        let isCase = node.isCase ? 1 : 0;
         let characterClass = [];
         const literales = node.chars
         .filter((char) => char instanceof CST.LiteralRango)
@@ -264,7 +307,7 @@ export default class FortranTranslator {
         .map((char) => char.accept(this));
 
         if (literales.length !== 0) {
-            characterClass = [`acceptSet([ ${literales.join(',')} ])`];
+            characterClass = [`acceptSet([ ${literales.join(',')} ], ${isCase})`];
         }
         if (ranges.length !== 0) {
             characterClass = [...characterClass, ...ranges];
@@ -279,7 +322,10 @@ export default class FortranTranslator {
      * @this {Visitor}
      */
     visitRango(node) {
-        return `acceptRange('${node.bottom}', '${node.top}')`;
+        if (node.isCase) {
+            return `acceptRange('${node.bottom}', '${node.top}', 1)`;
+        }
+        return `acceptRange('${node.bottom}', '${node.top}', 0)`;
     }
 
     /**
@@ -288,7 +334,14 @@ export default class FortranTranslator {
      */
 
     visitLiteralRango(node) {
-        return "'"+node.val+"'";
+        const literalMap = {
+            "\\t": "char(9)",  // Tabulación
+            "\\n": "char(10)", // Nueva línea
+            " ": "char(32)",   // Espacio
+            "\\r": "char(13)",  // Retorno de carro
+        };
+        const literalFortran = literalMap[node.val] || (node.isCase? `tolower('${node.val}')`:`'${node.val}'`);
+        return literalFortran;
     }
 
     /**
@@ -319,5 +372,29 @@ export default class FortranTranslator {
      */
     visitFinCadena(node) {
         return 'if (.not. acceptEOF()) cycle';
+    }
+
+    /**
+     * @param {CST.DelimiterCount} node
+     * @this {Visitor}
+     */
+    visitDelimiterCount(node) {
+         throw new Error('Method not implemented.');
+    }
+
+    /**
+     * @param {CST.DelimiterMinMax} node
+     * @this {Visitor}
+     */
+    visitDelimiterMinMax(node) {
+         throw new Error('Method not implemented.');
+    }
+
+    /**
+     * @param {CST.NumberDelimiter} node
+     * @this {Visitor}
+     */
+    visitNumberDelimiter(node) {
+         return node.val;
     }
 }
