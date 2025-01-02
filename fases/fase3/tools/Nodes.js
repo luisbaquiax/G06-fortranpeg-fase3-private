@@ -27,8 +27,11 @@ const nodes = {
     NegAssertion: {assertion: 'Node'},
     String: { val: 'string', isCase: '?boolean' },
     Corchetes: { chars: '(LiteralRango|Rango)[]', isCase: '?boolean' },
-    Rango: { bottom: 'string', top: 'string' },
-    LiteralRango:{val:'string'},
+    Rango: { bottom: 'string', top: 'string', isCase: '?boolean' },
+    LiteralRango:{val:'string', isCase: '?boolean'},
+    DelimiterCount: {count: 'Node', expr: '?Opciones'},
+    DelimiterMinMax: {min: '?Node', max: '?Node', expr: '?Opciones'},
+    NumberDelimiter: {val: 'string'},
     Identificador: { id: 'string' },
     Grupo: {expr: 'Opciones'},
     Any: {},
@@ -36,4 +39,3 @@ const nodes = {
  };
  
  export default nodes;
-

@@ -49,7 +49,13 @@ const analizar = () => {
             cst = null;
             return;
         } else {
-            salida.setValue('Análisis Exitoso');
+            generateParser(cst)
+            .then((fileContents) => {
+                salida.setValue(fileContents);
+            }).catch((e) => {
+                salida.setValue(`Error: ${e.message}`);
+            });
+            
         }
 
         // salida.setValue("Análisis Exitoso");
