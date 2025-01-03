@@ -62,6 +62,19 @@ export default class Visitor {
      */
     currentExpr;
 
+    /**
+     * Para llamar a los grupos
+    * @type {number}
+    * 
+     */
+    nameGroup;
+
+    /**
+     * Para agregar las funciones de los grupos
+     * @type {string[]}
+     */
+    groupsFunction;
+
     ${Object.keys(nodes)
         .map(
             (node) => `

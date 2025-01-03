@@ -375,6 +375,8 @@ export default class FortranTranslator {
      * @this {Visitor}
      */
     visitGrupo(node) {
+        let tempT = this.translatingStart;
+        this.translatingStart = false;
         let nameGrupo = "group"+this.nameGroup;
         this.currentRule = nameGrupo;
         
@@ -420,6 +422,7 @@ export default class FortranTranslator {
         });
 
         this.nameGroup++;
+        this.translatingStart = tempT;
         return ruleTranslation;
         //return node.expr.accept(this);
     }

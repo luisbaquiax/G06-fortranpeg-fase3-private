@@ -17,6 +17,8 @@ module parser
     implicit none
     character(len=:), allocatable, private :: input
     integer, private :: savePoint, lexemeStart, cursor
+    character(len=:), allocatable :: msgError
+	logical:: isError = .false.
 
     interface toStr
         module procedure intToStr
@@ -37,6 +39,9 @@ module parser
         cursor = 1
 
         res = ${data.startingRuleId}()
+        if (isError )then
+		    call pegStopError()
+		end if 
         
     end function parse
 
@@ -138,10 +143,13 @@ module parser
     end function consumeInput
 
     subroutine pegError()
-	character(len=:), allocatable :: error
-	error = "Error at " // intToStr(cursor) // ": '"//input(cursor:cursor)//"'"
-	print*, error
+		msgError = "Error en la linea " // intToStr(cursor) // ": No se esperaba ->'"//input(cursor:cursor)//"'"
+		isError = .true.
     end subroutine pegError
+	
+	subroutine pegStopError()
+		STOP msgError
+	end subroutine
 
     function intToStr(int) result(cast)
         integer :: int
@@ -152,17 +160,17 @@ module parser
         cast = trim(adjustl(tmp))
     end function intToStr
 
-    FUNCTION StringToInt(str) RESULT(result)
-    IMPLICIT NONE
-    CHARACTER(LEN=*), INTENT(IN) :: str
-    INTEGER :: result
-    INTEGER :: ioStatus
+    function StringToInt(str) result(result)
+        implicit none
+        character(LEN=*), intent(IN) :: str
+        integer :: result
+        integer :: ioStatus
 
-    result = 0
+        result = 0
 
-    READ(str, *, IOSTAT=ioStatus) result
+        read(str, *, IOSTAT=ioStatus) result
 
-END FUNCTION StringToInt
+    end function StringToInt
 
 
     function strToStr(str) result(cast)
@@ -203,6 +211,8 @@ export const rule = (data) => `
         ${data.returnType} :: res
         ${data.exprDeclarations.join('\n')}
         ${data.delimiterIndex.join('\n')}
+        character(len=:), allocatable :: tmp
+        logical :: skipCase = .false.
         integer :: i
 
         savePoint = cursor
@@ -223,6 +233,8 @@ export const election = (data) => `
             ${data.exprs.map(
                 (expr, i) => `
             case(${i})
+                isError = .false.
+                skipCase = .false.
                 cursor = savePoint
                 ${expr}
                 exit
@@ -312,21 +324,36 @@ export const strExpr = (data) => {
 */
 export const strExprDelimiter = (data) => {
     if(data.delimiter !== ''){
-        return `lexemeStart = cursor
+        return `${data.destination} = ''
+                lexemeStart = cursor
                 do ${data.iterador} = 1, ${data.exprIterator}
-                    if(.not. ${data.expr}) cycle
-                    ${data.destination} =  ${data.destination}//consumeInput()
-                    if(${data.iterador} < ${data.exprIterator}) then
-                        if(.not. ${data.delimiter}) cycle
-                        consumeInput()
+                    if(.not. ${data.expr}) then
+                        skipCase = .true.
+                        exit
                     end if
-                end do`;
+                    ${data.destination} =  ${data.destination}//consumeInput()
+                    lexemeStart = cursor
+                    if(${data.iterador} < ${data.exprIterator}) then
+                        if(.not. ${data.delimiter}) then
+                            skipCase = .true.
+                            exit
+                        end if
+                        tmp = consumeInput()
+                        lexemeStart = cursor
+                    end if
+                end do
+                if(skipCase) cycle
+                `;
     }
     return `lexemeStart = cursor
             do ${data.iterador} = 1, ${data.exprIterator}
-               if(.not. ${data.expr}) cycle
+               if(.not. ${data.expr}) then
+                     skipCase = .true.
+                     exit
+                end if
                
             end do
+            if(skipCase) cycle
             ${data.destination} = consumeInput()`;
             
 };
