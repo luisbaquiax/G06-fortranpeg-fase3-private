@@ -213,6 +213,7 @@ export const rule = (data) => `
         ${data.delimiterIndex.join('\n')}
         character(len=:), allocatable :: tmp
         logical :: skipCase = .false.
+        integer :: iterationsTmp = 0
         integer :: i
 
         savePoint = cursor
@@ -356,6 +357,61 @@ export const strExprDelimiter = (data) => {
             if(skipCase) cycle
             ${data.destination} = consumeInput()`;
             
+};
+
+
+/**
+ *
+ * @param {{
+ * exprIteratorMin: string;
+* exprIteratorMax: string;
+* iterador: string;
+*  expr: string;
+*  delimiter?: string;
+*  destination: string
+*  quantifier?: string;
+* }} data
+* @returns
+*/
+export const strExprDelimiterMinMax = (data) => {
+   if(data.delimiter !== ''){
+       return `${data.destination} = ''
+               lexemeStart = cursor
+               do ${data.iterador} = 1, ${data.exprIteratorMax}
+                   if(.not. ${data.expr}) then
+                       skipCase = .true.
+                       exit
+                   end if
+                   ${data.destination} =  ${data.destination}//consumeInput()
+                   lexemeStart = cursor
+                   iterationsTmp = iterationsTmp + 1
+                   if(${data.iterador} < ${data.exprIteratorMax}) then
+                       if(.not. ${data.delimiter}) then
+                           skipCase = .true.
+                           exit
+                       end if
+                       tmp = consumeInput()
+                       lexemeStart = cursor
+                   end if
+               end do
+                if(iterationsTmp < ${data.exprIteratorMin}) then
+                    if(skipCase) cycle
+                end if
+                    `;
+   }
+   return `lexemeStart = cursor
+           do ${data.iterador} = 1, ${data.exprIteratorMax}
+              if(.not. ${data.expr}) then
+                    skipCase = .true.
+                    exit
+               end if
+               iterationsTmp = iterationsTmp + 1
+           end do
+           if(iterationsTmp < ${data.exprIteratorMin}) then
+                if(skipCase) cycle
+            end if
+           ${data.destination} = consumeInput()`;
+           
 };
 
 /**

@@ -229,6 +229,24 @@ export default class FortranTranslator {
                 });
 
             }
+
+            if(node.qty instanceof CST.DelimiterMinMax){
+                let exprIteratorMin;
+                node.qty.min? exprIteratorMin = node.qty.min.accept(this): exprIteratorMin = '0';
+                let exprIteratorMax;
+                node.qty.max? exprIteratorMax = node.qty.max.accept(this): exprIteratorMax = '10';
+
+                
+                return Template.strExprDelimiterMinMax({
+                    exprIteratorMin: exprIteratorMin,
+                    exprIteratorMax: exprIteratorMax,
+                    iterador: `delimiter_iterator_${this.currentChoice}_${this.currentExpr}`,
+                    expr: node.expr.accept(this),
+                    delimiter: node.qty.expr? node.qty.expr.accept(this): '',
+                    destination: getExprId(this.currentChoice, this.currentExpr),
+                });
+            
+            }
             // TODO: Implement repetitions (e.g., |3|, |1..3|, etc...)
             //throw new Error('Repetitions not implemented.');
         } else {
