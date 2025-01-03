@@ -69,7 +69,6 @@ export default class FortranTranslator {
      * @this {Visitor}
      */
     visitProducciones(node) {
-        console.log(this.actionReturnTypes)
         this.currentRule = node.id;
         this.currentChoice = 0;
 
@@ -284,15 +283,15 @@ export default class FortranTranslator {
      * @this {Visitor}
      */
     visitAssertion(node) {
-        throw new Error('Method not implemented.');
+        return `\t\t\t\tif(.not. ${node.assertion.accept(this)}) cycle`
     }
 
     /**
      * @param {CST.NegAssertion} node
      * @this {Visitor}
      */
-    visitNegAssertion(node) {
-        throw new Error('Method not implemented.');
+    visitNegAssertion(node) {        
+        return `\t\t\t\tif(${node.assertion.accept(this)}) cycle`
     }
 
     /**
