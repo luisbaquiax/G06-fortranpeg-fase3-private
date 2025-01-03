@@ -371,7 +371,7 @@ export class DelimiterCount {
     /**
      *
      * @param {Node} count
-	 * @param {Opciones=} expr
+	 * @param {Node=} expr
      */
     constructor(count, expr) {
         this.count = count;
@@ -397,7 +397,7 @@ export class DelimiterMinMax {
      *
      * @param {Node=} min
 	 * @param {Node=} max
-	 * @param {Opciones=} expr
+	 * @param {Node=} expr
      */
     constructor(min, max, expr) {
         this.min = min;

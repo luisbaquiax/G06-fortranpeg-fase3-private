@@ -117,10 +117,10 @@ conteo = "|" _ expr: (numero / identificadorDelimiter) _ "|" {
                 return new n.DelimiterMinMax(expr_1, expr_2);
         }
                 
-        / "|" _ expr:(numero / id:identificador)? _ "," _ opcion:opciones _ "|"{
+        / "|" _ expr:(numero / id:identificador)? _ "," _ opcion:(match) _ "|"{
                 return new n.DelimiterCount(expr, opcion);
         }
-        / "|" _ expr_1:(numero / id:identificador)? _ ".." _ expr_2:(numero / id2:identificador)? _ "," _ opcion:opciones _ "|"{
+        / "|" _ expr_1:(numero / id:identificador)? _ ".." _ expr_2:(numero / id2:identificador)? _ "," _ opcion:(match) _ "|"{
                 return new n.DelimiterMinMax(expr_1, expr_2, opcion);
         }
 
