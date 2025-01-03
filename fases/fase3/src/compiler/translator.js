@@ -232,9 +232,20 @@ export default class FortranTranslator {
 
             if(node.qty instanceof CST.DelimiterMinMax){
                 let exprIteratorMin;
-                node.qty.min? exprIteratorMin = node.qty.min.accept(this): exprIteratorMin = '0';
+                if(node.qty.min instanceof CST.NumberDelimiter){
+                    exprIteratorMin = node.qty.min.accept(this);
+                }else{
+                    //NO PUDE IMPLEMENTARLO
+                    exprIteratorMin = "1";
+                }
+
                 let exprIteratorMax;
-                node.qty.max? exprIteratorMax = node.qty.max.accept(this): exprIteratorMax = '10';
+                if( node.qty.max instanceof CST.NumberDelimiter){
+                    exprIteratorMax = node.qty.max.accept(this);
+                }else{
+                    //NO PUDE IMPLEMENTARLO
+                    exprIteratorMax = "5";
+                }
 
                 
                 return Template.strExprDelimiterMinMax({

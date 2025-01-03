@@ -1023,7 +1023,7 @@ function peg$parse(input, options) {
         if (peg$silentFails === 0) { peg$fail(peg$e9); }
       }
       if (s1 !== peg$FAILED) {
-        s2 = peg$parsematch();
+        s2 = peg$parseannotated();
         if (s2 === peg$FAILED) {
           s2 = peg$parsepredicate();
         }
@@ -1048,7 +1048,7 @@ function peg$parse(input, options) {
           if (peg$silentFails === 0) { peg$fail(peg$e10); }
         }
         if (s1 !== peg$FAILED) {
-          s2 = peg$parsematch();
+          s2 = peg$parseannotated();
           if (s2 === peg$FAILED) {
             s2 = peg$parsepredicate();
           }
@@ -1323,6 +1323,9 @@ function peg$parse(input, options) {
       s3 = peg$parsenumero();
       if (s3 === peg$FAILED) {
         s3 = peg$parseidentificadorDelimiter();
+        if (s3 === peg$FAILED) {
+          s3 = peg$parsepredicate();
+        }
       }
       if (s3 !== peg$FAILED) {
         s4 = peg$parse_();
@@ -1362,6 +1365,9 @@ function peg$parse(input, options) {
         s3 = peg$parsenumero();
         if (s3 === peg$FAILED) {
           s3 = peg$parseidentificador();
+          if (s3 === peg$FAILED) {
+            s3 = peg$parsepredicate();
+          }
         }
         if (s3 === peg$FAILED) {
           s3 = null;
@@ -1379,6 +1385,9 @@ function peg$parse(input, options) {
           s7 = peg$parsenumero();
           if (s7 === peg$FAILED) {
             s7 = peg$parseidentificador();
+            if (s7 === peg$FAILED) {
+              s7 = peg$parsepredicate();
+            }
           }
           if (s7 === peg$FAILED) {
             s7 = null;
@@ -1420,6 +1429,9 @@ function peg$parse(input, options) {
           s3 = peg$parsenumero();
           if (s3 === peg$FAILED) {
             s3 = peg$parseidentificador();
+            if (s3 === peg$FAILED) {
+              s3 = peg$parsepredicate();
+            }
           }
           if (s3 === peg$FAILED) {
             s3 = null;
@@ -1477,6 +1489,9 @@ function peg$parse(input, options) {
             s3 = peg$parsenumero();
             if (s3 === peg$FAILED) {
               s3 = peg$parseidentificador();
+              if (s3 === peg$FAILED) {
+                s3 = peg$parsepredicate();
+              }
             }
             if (s3 === peg$FAILED) {
               s3 = null;
@@ -1494,6 +1509,9 @@ function peg$parse(input, options) {
               s7 = peg$parsenumero();
               if (s7 === peg$FAILED) {
                 s7 = peg$parseidentificador();
+                if (s7 === peg$FAILED) {
+                  s7 = peg$parsepredicate();
+                }
               }
               if (s7 === peg$FAILED) {
                 s7 = null;
