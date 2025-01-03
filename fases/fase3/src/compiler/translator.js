@@ -265,7 +265,7 @@ export default class FortranTranslator {
      * @this {Visitor}
      */
     visitAssertion(node) {
-        throw new Error('Method not implemented.');
+        return `\t\t\t\tif(.not. ${node.assertion.accept(this)}) cycle`
     }
 
     /**
@@ -273,7 +273,7 @@ export default class FortranTranslator {
      * @this {Visitor}
      */
     visitNegAssertion(node) {
-        throw new Error('Method not implemented.');
+        return `\t\t\t\tif(${node.assertion.accept(this)}) cycle`
     }
 
     /**
