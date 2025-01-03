@@ -294,6 +294,7 @@ export default class FortranTranslator {
      * @this {Visitor}
      */
     visitAssertion(node) {
+        if (node.assertion instanceof CST.Predicate) return ""
         return `\t\t\t\tif(.not. ${node.assertion.accept(this)}) cycle`
     }
 
@@ -302,6 +303,7 @@ export default class FortranTranslator {
      * @this {Visitor}
      */
     visitNegAssertion(node) {        
+        if (node.assertion instanceof CST.Predicate) return ""
         return `\t\t\t\tif(${node.assertion.accept(this)}) cycle`
     }
 
