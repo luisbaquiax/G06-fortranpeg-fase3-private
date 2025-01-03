@@ -107,10 +107,11 @@ editor.onDidChangeModelContent(() => {
 
 let downloadHappening = false;
 const button = document.getElementById('ButtomDownload');
-button.addEventListener('click', () => {
+button.addEventListener('click', (event) => {
+    event.preventDefault(); // Prevenir el comportamiento predeterminado del enlace
     if (downloadHappening) return;
     if (!cst) {
-        alert('Escribe una gramatica valida');
+        alert('Escribe una gramática válida');
         return;
     }
     let url;
@@ -118,13 +119,18 @@ button.addEventListener('click', () => {
         .then((fileContents) => {
             const blob = new Blob([fileContents], { type: 'text/plain' });
             url = URL.createObjectURL(blob);
-            button.href = url;
-            downloadHappening = true;
-            button.click();
+
+            const tempLink = document.createElement('a');
+            tempLink.href = url;
+            tempLink.download = 'parser.f90';
+            tempLink.style.display = 'none';
+            document.body.appendChild(tempLink);
+
+            tempLink.click();
+            document.body.removeChild(tempLink);
         })
         .finally(() => {
-            URL.revokeObjectURL(url);
-            button.href = '#';
+            if (url) URL.revokeObjectURL(url);
             downloadHappening = false;
         });
 });
