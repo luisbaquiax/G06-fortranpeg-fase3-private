@@ -49,7 +49,7 @@ union
     const labeledExprs = exprs
         .filter((expr) => expr instanceof n.Pluck)
         .filter((expr) => expr.labeledExpr.label);
-    if (labeledExprs.length > 0) {
+    if (labeledExprs.length > 0 && action) {
         action.params = labeledExprs.reduce((args, labeled) => {
             const expr = labeled.labeledExpr.annotatedExpr.expr;
             args[labeled.labeledExpr.label] =
