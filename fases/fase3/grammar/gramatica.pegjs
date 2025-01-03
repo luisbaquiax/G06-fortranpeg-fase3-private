@@ -110,17 +110,17 @@ match
 
 // conteo = "|" parteconteo _ (_ delimitador )? _ "|"
 
-conteo = "|" _ expr: (numero / identificadorDelimiter) _ "|" {
+conteo = "|" _ expr: (numero / identificadorDelimiter/predicate) _ "|" {
                return new n.DelimiterCount(expr);
           }
-        / "|" _ expr_1:(numero / id:identificador)? _ ".." _ expr_2:(numero / id2:identificador)? _ "|"{
+        / "|" _ expr_1:(numero / id:identificador/predicate)? _ ".." _ expr_2:(numero / id2:identificador/predicate)? _ "|"{
                 return new n.DelimiterMinMax(expr_1, expr_2);
         }
                 
-        / "|" _ expr:(numero / id:identificador)? _ "," _ opcion:(match) _ "|"{
+        / "|" _ expr:(numero / id:identificador/predicate)? _ "," _ opcion:(match) _ "|"{
                 return new n.DelimiterCount(expr, opcion);
         }
-        / "|" _ expr_1:(numero / id:identificador)? _ ".." _ expr_2:(numero / id2:identificador)? _ "," _ opcion:(match) _ "|"{
+        / "|" _ expr_1:(numero / id:identificador/predicate)? _ ".." _ expr_2:(numero / id2:identificador/predicate)? _ "," _ opcion:(match) _ "|"{
                 return new n.DelimiterMinMax(expr_1, expr_2, opcion);
         }
 
