@@ -69,6 +69,7 @@ export default class FortranTranslator {
      * @this {Visitor}
      */
     visitProducciones(node) {
+        console.log(this.actionReturnTypes)
         this.currentRule = node.id;
         this.currentChoice = 0;
 
